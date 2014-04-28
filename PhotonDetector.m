@@ -1,28 +1,33 @@
-function [ rate,PF,PD ] = PhotonDetector(threshold,lambda0,lambda1 )
-%UNTITLED3 Summary of this function goes here
-%   Detailed explanation goes here
+function [ rate,PF,PD ] = PhotonDetector(threshold,lambda0,lambda1)
 
-iter = 500;
+iter = 100;
 Ri=zeros(iter,1);PFi=Ri;PDi=Ri;
-
 for i=1:iter
-
-P0 = .8; P1 = 1-P0;
-P = P0*10;
+    
+% Create Signal
 bits = randi(10,1000,1);
-bits(bits<=P)=0;
-bits(bits>P)=1;
+bits(bits<=8)=0;
+bits(bits>8)=1;
 
-mu0 = 1/lambda0; mu1 = 1/lambda1;
+% Send Photons
 y = bits;
-y(bits==0) = exprnd(mu0,size(y(bits==0)));
-y(bits==1) = exprnd(mu1,size(y(bits==1)));
+y(bits==0) = poissrnd(lambda0,size(y(bits==0)));
+y(bits==1) = poissrnd(lambda1,size(y(bits==1)));
 
+% LRT Comparison
 d=y;
-d(y>threshold) = 0;
-d(y<=threshold) = 1;
+d(y<=threshold) = 0;
+d(y>threshold) = 1;
 
-rate = sum(d~=bits)/length(bits);
-
+% Calculate Statistics
+Ri(i) = sum(bits~=d)/length(bits);
+H0 = d(bits==0);
+H1 = d(bits==1);
+PFi(i) = sum(H0)/length(H0);
+PDi(i) = sum(H1)/length(H1);
 end
 
+rate = mean(Ri);
+PF = mean(PFi);
+PD = mean(PDi);
+end
